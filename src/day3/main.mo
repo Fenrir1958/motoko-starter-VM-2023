@@ -8,13 +8,23 @@ import Nat "mo:base/Nat";
 import Nat32 "mo:base/Nat32";
 
 actor class StudentWall() {
+  //1.
   type Message = Type.Message;
   type Content = Type.Content;
   type Survey = Type.Survey;
   type Answer = Type.Answer;
+  //2.
+  let messageId: Nat = 0;
+  //3.
+  type wall<Nat,Message> = HashMap.HashMap<Nat,Message>;
 
   // Add a new message to the wall
   public shared ({ caller }) func writeMessage(c : Content) : async Nat {
+    let message : Message = {
+      content = switch(c){ case(#Text(t)){let con = t; }};
+      vote = 0;
+      creator = 'victor';
+    };
     return 9;
   };
 
