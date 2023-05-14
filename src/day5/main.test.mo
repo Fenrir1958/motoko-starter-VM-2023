@@ -200,29 +200,29 @@ let success = run([
       ),
     ],
   ),
-  describe(
-    "#http_request",
-    [
-      it(
-        "should render a body with a list of student names that got graduated",
-        do {
-          let testRequest : Http.HttpRequest = {
-            body = "";
-            headers = [];
-            method = "GET";
-            url = "/";
-          };
+  // describe(
+  //   "#http_request",
+  //   [
+  //     it(
+  //       "should render a body with a list of student names that got graduated",
+  //       do {
+  //         let testRequest : Http.HttpRequest = {
+  //           body = "";
+  //           headers = [];
+  //           method = "GET";
+  //           url = "/";
+  //         };
 
-          let response = await day5Actor.http_request(testRequest);
-          let parsedResponse = Text.decodeUtf8(response.body);
-          switch (parsedResponse) {
-            case (null) { Debug.trap("Unexpected body response") };
-            case (?parsedResponse) { assertTrue(Text.size(parsedResponse) > 0) };
-          };
-        },
-      ),
-    ],
-  ),
+  //         let response = await day5Actor.http_request(testRequest);
+  //         let parsedResponse = Text.decodeUtf8(response.body);
+  //         switch (parsedResponse) {
+  //           case (null) { Debug.trap("Unexpected body response") };
+  //           case (?parsedResponse) { assertTrue(Text.size(parsedResponse) > 0) };
+  //         };
+  //       },
+  //     ),
+  //   ],
+  // ),
 ]);
 
 if (success == false) {

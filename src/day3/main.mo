@@ -25,7 +25,7 @@ actor class StudentWall() {
   };
   let wall = HashMap.HashMap<Nat, Message>(0, Nat.equal, natHash);
 
-  type Order = {#less; #equal; #greater};
+  type Order = { #less; #equal; #greater };
 
   // Add a new message to the wall
   public shared ({ caller }) func writeMessage(c : Content) : async Nat {

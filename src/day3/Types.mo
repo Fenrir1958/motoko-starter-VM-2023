@@ -22,5 +22,4 @@ module {
     answers : [Answer]; // possible answers for the survey
   };
 
-
 };
