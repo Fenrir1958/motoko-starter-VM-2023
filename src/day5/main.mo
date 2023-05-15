@@ -33,11 +33,8 @@ actor class Verifier() {
 
   // STEP 1 - BEGIN
   public shared ({ caller }) func addMyProfile(profile : StudentProfile) : async Result.Result<(), Text> {
-    if (profile.name == "" or profile.Team == "" or profile.graduate == false) {
-      studentProfileStore.put(caller, profile);
-      return #ok();
-    };
-    return #err("not implemented");
+    studentProfileStore.put(caller, profile);
+    return #ok();
   };
 
   public shared ({ caller }) func seeAProfile(p : Principal) : async Result.Result<StudentProfile, Text> {
@@ -86,22 +83,21 @@ actor class Verifier() {
 
   public func test(canisterId : Principal) : async TestResult {
     let calculatorInterface = actor (Principal.toText(canisterId)) : actor {
-        reset : shared () -> async Int;
-        add : shared (x : Nat) -> async Int;
-        sub : shared (x : Nat) -> async Int;
-        };
-    // let calculate : calculatorInterface = actor (Principal.toText(canisterId));
+      reset : shared () -> async Int;
+      add : shared (x : Int) -> async Int;
+      sub : shared (x : Int) -> async Int;
+    };
     try {
-      var reset = await calculatorInterface.reset();
-      if (reset != 0) {
-        return #err(#UnexpectedValue("not implemented"));
-      };
-      var add = await calculatorInterface.add(1);
-      if (add != 1) {
+      var add = await calculatorInterface.add(2);
+      if (add != 2) {
         return #err(#UnexpectedValue("not implemented"));
       };
       var sub = await calculatorInterface.sub(1);
-      if (sub != 0) {
+      if (sub != 1) {
+        return #err(#UnexpectedValue("not implemented"));
+      };
+      var reset = await calculatorInterface.reset();
+      if (reset != 0) {
         return #err(#UnexpectedValue("not implemented"));
       };
       return #ok();
@@ -115,7 +111,7 @@ actor class Verifier() {
   // NOTE: Not possible to develop locally,
   // as actor "aaaa-aa" (aka the IC itself, exposed as an interface) does not exist locally
 
-  private func _parseCanisterControllers(errorMessage : Text) : [Principal] {
+  func parseCanisterControllers(errorMessage : Text) : [Principal] {
     let lines = Iter.toArray(Text.split(errorMessage, #text("\n")));
     let words = Iter.toArray(Text.split(lines[1], #text(" ")));
     var i = 2;
@@ -128,16 +124,22 @@ actor class Verifier() {
   };
 
   public func verifyOwnership(canisterId : Principal, p : Principal) : async Bool {
+    let controllers : IC.ManagementCanisterInterface = actor ("aaaaa-aa");
     try {
-      let controllers : IC.ManagementCanisterInterface = actor ("aaaaa-aa");
-      let callCanister = await controllers.canister_status({
+      let canisterStatus = await controllers.canister_status({
         canister_id = canisterId;
       });
+      let canisterControllers = canisterStatus.settings.controllers;
+      for (controller in canisterControllers.vals()) {
+        if (controller == p) {
+          return true;
+        };
+      };
       return false;
     } catch (e) {
       let message = Error.message(e);
-      let callCanisterController = _parseCanisterControllers(message);
-      for (controller in callCanisterController.vals()) {
+      let arrayControllers = parseCanisterControllers(message);
+      for (controller in arrayControllers.vals()) {
         if (controller == p) {
           return true;
         };
@@ -149,54 +151,58 @@ actor class Verifier() {
 
   // STEP 4 - BEGIN
   public shared func verifyWork(canisterId : Principal, p : Principal) : async Result.Result<(), Text> {
-    let verify = await test(canisterId);
     let verifyOwner = await verifyOwnership(canisterId, p);
-    switch (verifyOwner) {
-      case (true) {
-        let student = studentProfileStore.get(p);
-        switch (student) {
-          case (?student) {
-            let updateStudent = {
-              name = student.name;
-              Team = student.Team;
-              graduate = true;
+    if (verifyOwner) {
+      let canisterTest = await test(canisterId);
+      switch (canisterTest) {
+        case (#ok()) {
+          let studentProfile = studentProfileStore.get(p);
+          switch (studentProfile) {
+            case (?studentP) {
+              let graduateProfile = {
+                name = studentP.name;
+                team = studentP.team;
+                graduate = true;
+              };
+              ignore studentProfileStore.replace(p, graduateProfile);
+              return #ok();
             };
-            ignore studentProfileStore.replace(p,updateStudent);
-            return #ok();
-          };
-          case (null) {
-            return #err("not implemented");
+            case (null) {
+              return #err("not implemented");
+            };
           };
         };
+        case (#err(_)) {
+          return #err("not implemented");
+        };
       };
-      case (false) {
-        return #err("not implemented");
-      };
+    } else {
+      return #err("not implemented");
     };
   };
   // STEP 4 - END
 
   // STEP 5 - BEGIN
-  // public type HttpRequest = HTTP.HttpRequest;
-  // public type HttpResponse = HTTP.HttpResponse;
+  public type HttpRequest = HTTP.HttpRequest;
+  public type HttpResponse = HTTP.HttpResponse;
 
   // // NOTE: Not possible to develop locally,
   // // as Timer is not running on a local replica
-  // public func activateGraduation() : async () {
-  //   return ();
-  // };
+  public func activateGraduation() : async () {
+    return ();
+  };
 
-  // public func deactivateGraduation() : async () {
-  //   return ();
-  // };
+  public func deactivateGraduation() : async () {
+    return ();
+  };
 
-  // public query func http_request(request : HttpRequest) : async HttpResponse {
-  //   return ({
-  //     status_code = 200;
-  //     headers = [];
-  //     body = Text.encodeUtf8("");
-  //     streaming_strategy = null;
-  //   });
-  // };
-  // STEP 5 - END
+  public query func http_request(request : HttpRequest) : async HttpResponse {
+    return ({
+      status_code = 200;
+      headers = [];
+      body = Text.encodeUtf8("");
+      streaming_strategy = null;
+    });
+  };
 };
+// STEP 5 - END
